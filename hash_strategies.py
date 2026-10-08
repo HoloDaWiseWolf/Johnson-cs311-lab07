@@ -1,4 +1,11 @@
 """
+name:Persephone
+class:311
+assignment:lab7
+date:10/7/2026
+"""
+
+"""
 Lab 7: The Collision Resolver -- starter.
 
 Complete the three classes below. See
@@ -35,17 +42,52 @@ class ChainedHashMap(Generic[K, V]):
     def insert(self, key: K, value: V) -> None:
         """Insert, or update in place if `key` already exists. Resize (double + rehash) once load factor > 0.75."""
         # TODO
-        raise NotImplementedError
+        next_load = (self._count + 1) / len(self._buckets)
+        if next_load > 0.75:
+            old_buckets: List[Optional[_ChainNode[K, V]]] = self._buckets
+            self._buckets = [None] * (2 * len(old_buckets))
+            self._count = 0
+            for i in range(len(old_buckets)):
+                while i.key is not None:
+                    self.insert(i.key,i.value)
+                    i = i.next
+        index = hash(key) % len(self._buckets)
+        node = self._buckets[index]
+        while node is not None:
+            if node.key == key:
+                self._buckets[node] = [key,value]
+                return
+            node = node.next
+        new_node = _ChainNode(key, value)
+        new_node.next = self._buckets[index]
+        self._buckets[index] = new_node
+        self._count += 1
+        #raise NotImplementedError
 
     def get(self, key: K) -> V:
         """Return the value for `key`. Raise KeyError if missing."""
         # TODO
-        raise NotImplementedError
+        index = hash(key) % len(self._buckets)
+        node = self._buckets[index]
+        while node is not None:
+            if node.key == key: return node.value
+            node = node.next
+        raise KeyError(key)
+        #raise NotImplementedError
 
     def delete(self, key: K) -> None:
         """Remove `key`. Raise KeyError if missing."""
         # TODO
-        raise NotImplementedError
+        index = hash(key) % len(self._buckets)
+        node = self._buckets[index]
+        while node is not None:
+            if node.key == key:
+                self._buckets[node] = None
+                self._count -= 1
+                return
+            node = node.next
+        raise KeyError(key)
+        #raise NotImplementedError
 
 
 class LinearProbingHashMap(Generic[K, V]):
@@ -62,17 +104,57 @@ class LinearProbingHashMap(Generic[K, V]):
     def insert(self, key: K, value: V) -> None:
         """Resize (double + rehash) once load factor > 0.7."""
         # TODO
-        raise NotImplementedError
+        next_load = (self._count + 1) / len(self._keys)
+        if next_load > 0.7:
+            old_keys = self._keys
+            old_values = self._values
+            self._keys = [None] * (2 * len(old_keys))
+            self._values = [None] * (2 * len(old_values))
+            self._count = 0
+            for i in range(len(old_keys)):
+                self.insert(old_keys[i],old_values[i])
+        home = hash(key) % len(self._keys)
+        for offset in range(len(self._keys)):
+            slot = (home + offset) % len(self._keys)
+            curr_key = self._keys[slot]
+            if curr_key is None:
+                self._keys[slot] = key
+                self._values[slot] = value
+                self._count += 1
+                return 
+            if curr_key ==_TOMBSTONE:
+                self._keys[slot] = key
+                self._values[slot] = value
+                self._count += 1
+                return
+            if curr_key == key:
+                self._values[slot] = value
+                return
+        #raise NotImplementedError
 
     def search(self, key: K) -> V:
         """Return the value for `key`. Raise KeyError if missing."""
         # TODO
-        raise NotImplementedError
+        home = hash(key) % len(self._keys)
+        for offset in range(len(self._keys)):
+            slot = (home + offset) % len(self._keys)
+            if _keys(slot) == key:
+                return _values(slot)
+        raise KeyError(key)
+        #raise NotImplementedError
 
     def delete(self, key: K) -> None:
         """Remove `key` using a tombstone (not None) so later probes don't stop early. Raise KeyError if missing."""
         # TODO
-        raise NotImplementedError
+        home = hash(key) % len(self._keys)
+        for offset in range(len(self._keys)):
+            slot = (home + offset) % len(self._keys)
+            if _keys(slot) == key:
+                self._keys[slot] = _TOMBSTONE
+                self._values[slot] = None
+                self._count -= 1
+        raise KeyError(key)
+        #raise NotImplementedError
 
 
 class QuadraticProbingHashMap(Generic[K, V]):
@@ -102,14 +184,55 @@ class QuadraticProbingHashMap(Generic[K, V]):
     def insert(self, key: K, value: V) -> None:
         """Resize (grow + rehash) once load factor > 0.7 -- see the pitfall note above."""
         # TODO
-        raise NotImplementedError
+        next_load = (self._count + 1) / len(self._keys)
+        if next_load > 0.7:
+            old_keys = self._keys
+            old_values = self._values
+            self._keys = [None] * (2 * len(old_keys))
+            self._values = [None] * (2 * len(old_values))
+            self._count = 0
+            for i in range(len(old_keys)):
+                self.insert(old_keys[i],old_values[i])
+        home = hash(key) % len(self._keys)
+        for offset in range(len(self._keys)):
+            slot = (home + offset) % len(self._keys)
+            curr_key = self._keys[slot]
+            if curr_key is None:
+                self._keys[slot] = key
+                self._values[slot] = value
+                self._count += 1
+                return 
+            if curr_key ==_TOMBSTONE:
+                self._keys[slot] = key
+                self._values[slot] = value
+                self._count += 1
+                return
+            if curr_key == key:
+                self._values[slot] = value
+                return
+        #raise NotImplementedError
+        #raise NotImplementedError
 
     def search(self, key: K) -> V:
         """Return the value for `key`. Raise KeyError if missing."""
         # TODO
-        raise NotImplementedError
+        home = hash(key) % len(self._keys)
+        for offset in range(len(self._keys)):
+            slot = (home + offset * offset) % len(self._keys)
+            if _keys(slot) == key:
+                return _values(slot)
+        raise KeyError(key)
+        #raise NotImplementedError
 
     def delete(self, key: K) -> None:
         """Remove `key` using a tombstone. Raise KeyError if missing."""
         # TODO
-        raise NotImplementedError
+        home = hash(key) % len(self._keys)
+        for offset in range(len(self._keys)):
+            slot = (home + offset * offset) % len(self._keys)
+            if _keys(slot) == key:
+                self._keys[slot] = _TOMBSTONE
+                self._values[slot] = none
+                self._count -= 1
+        raise KeyError(key)
+        #raise NotImplementedError
